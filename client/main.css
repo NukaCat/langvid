@@ -1,0 +1,44 @@
+body {
+    margin: 0;
+    background-color: #16171b;
+    color: #fff;
+}
+
+#main {
+    display: flex;
+}
+
+#sub_panel {
+    background-color: #222327;
+    flex-grow: 10;
+    overflow: scroll;
+}
+
+.sub_box {
+    display: flex;
+    align-items: center;
+    border: 1px solid rgba(255, 255, 255, .125);
+    padding: 5px;
+    background-color: #222327;
+}
+
+.sub_box_selected {
+    background-color: #3c3e45;
+}
+
+.sub_button {
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    min-height: 20px;
+    background-color: #fff;
+    border-radius: 50%;
+}
+
+
+.sub_text {
+    font-size: larger;
+    font-family: 'Source Han Sans';
+    margin-left: 10px;
+}
+
