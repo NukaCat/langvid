@@ -1,8 +1,9 @@
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, send_file
 import pysrt
 import json
 import os
 import sys
+import ffmpeg
 
 DATA_PATH = ''
 
@@ -80,6 +81,31 @@ def get_sub(path):
         status=200,
         mimetype='application/json'
     )
+
+def generate_thumbnail(video_path, thumbnail_path):
+    (
+    ffmpeg
+        .input(video_path, ss=20)
+        .filter('scale', 200, -1)
+        .output(thumbnail_path, vframes=1)
+        .run()
+    )
+    
+@app.route('/api/thumbnail/<path:path>')
+def get_thumbnail(path):
+    if len(path.split('/')) != 2:
+        return app.response_class(status=400)
+
+    title, video_name = path.split('/')
+
+    video_path = os.path.join(DATA_PATH, title, video_name) + '.mp4'
+    thumbnail_path = os.path.join(DATA_PATH, title, video_name) + '.png'
+
+    if os.path.isfile(thumbnail_path):
+        return send_file(thumbnail_path)
+    
+    generate_thumbnail(video_path, thumbnail_path)
+    return send_file(thumbnail_path)
     
 
 if __name__ == '__main__':

@@ -109,11 +109,22 @@ class TitleSelector {
         const title = video_list[idx].title
         const video_name = video_list[idx].video_name
 
-        const title_el = document.createElement('div')
-        title_el.className = 'title'
-        title_el.innerText = video_name
-        title_el.onclick = () => this.on_video_click(title, video_name)
-        this.element.appendChild(title_el)
+        const video_box_el = document.createElement('div')
+        video_box_el.className = 'video_box'
+        video_box_el.onclick = () => this.on_video_click(title, video_name)
+        
+        const thumbnail_el = document.createElement('img')
+        thumbnail_el.src = `api/thumbnail/${title}/${video_name}`
+        thumbnail_el.className = 'thumbnail'
+
+        const video_name_el = document.createElement('div')
+        video_name_el.innerText = video_name
+        video_name_el.className = 'video_name'
+
+        video_box_el.appendChild(thumbnail_el)
+        video_box_el.appendChild(video_name_el)
+
+        this.element.appendChild(video_box_el)
       }
     })
   }
@@ -158,6 +169,7 @@ function main() {
 
   title_selector.on_video_click = (title, video_name) => {
     video_player.set_video(title, video_name)
+    video_player.play()
 
     fetch_subs_for_video(title, video_name).then((subs) => {
       cur_subs = subs
