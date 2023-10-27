@@ -59,6 +59,7 @@ class SubPanel {
     for(var i = 0; i < sub_boxes.length; i++) { 
       sub_boxes[i].className = `sub_box ${ i == sub_idx ? 'sub_box_selected': ''}`
     }
+    sub_boxes[sub_idx].scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" })
   }
 
   set_height(height) {
