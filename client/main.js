@@ -1,22 +1,12 @@
 
-function fetch_subs_for_video(title, video_name) {
-  return fetch(`api/sub/${title}/${video_name}`).then((response) => {
-      if(!response.ok) {
-        console.log('Response error', response)
-      }
-      return response.json()
-  })
+async function fetch_json(url) {
+  const response = await fetch(url)
+  if (!response.ok) {
+    console.log('Response error', response)
+  }
+  return await response.json()
 }
 
-
-function fetch_video_list() {
-  return fetch('api/video_list').then((response) => {
-      if(!response.ok) {
-        console.log('Response error', response)
-      }
-      return response.json()
-  })
-}
 
 
 class SubPanel {
@@ -25,7 +15,8 @@ class SubPanel {
     this.on_sub_clicked = (sub_idx) => {}
   }
 
-  set_subs(subs) {
+  update_subtitles(subs) {
+    console.log('update subs', subs)
     if (subs == null) {
       subs = []
     }
@@ -83,9 +74,9 @@ class VideoPlayer {
     this.element.currentTime = time_ms / 1000.0
   }
 
-  set_video(title, video_name) {
+  set_video(video_url) {
     const video_source_el = this.element.querySelector('#video_source')
-    video_source_el.src = `api/video/${title}/${video_name}`
+    video_source_el.src = video_url
     video_source_el.type = 'video/mp4'
     this.element.load()
   }
@@ -104,38 +95,38 @@ class VideoPlayer {
 class TitleSelector {
   constructor(element) {
     this.element = element
-    this.on_video_click = (title, video_name) => {}
+    this.on_video_click = (video_id) => {}
   }
   
-  request_title_list_update() {
-    fetch_video_list().then((video_list) => {
-      for(let idx = 0; idx < video_list.length; idx++) {
-        const title = video_list[idx].title
-        const video_name = video_list[idx].video_name
+  update_video_list(video_list) {
+    console.log(video_list)
+    for(let idx = 0; idx < video_list.length; idx++) {
+      const video = video_list[idx]
 
-        const video_box_el = document.createElement('div')
-        video_box_el.className = 'video_box'
-        video_box_el.onclick = () => this.on_video_click(title, video_name)
-        
-        const thumbnail_el = document.createElement('img')
-        thumbnail_el.src = `api/thumbnail/${title}/${video_name}`
-        thumbnail_el.className = 'thumbnail'
+      const video_box_el = document.createElement('div')
+      video_box_el.className = 'video_box'
+      video_box_el.onclick = () => this.on_video_click(video.video_id)
+      
+      const thumbnail_el = document.createElement('img')
+      thumbnail_el.src = video.thumbnail_url
+      thumbnail_el.className = 'thumbnail'
 
-        const video_name_el = document.createElement('div')
-        video_name_el.innerText = video_name
-        video_name_el.className = 'video_name'
+      const video_name_el = document.createElement('div')
+      video_name_el.innerText = video.episode
+      video_name_el.className = 'video_name'
 
-        video_box_el.appendChild(thumbnail_el)
-        video_box_el.appendChild(video_name_el)
+      video_box_el.appendChild(thumbnail_el)
+      video_box_el.appendChild(video_name_el)
 
-        this.element.appendChild(video_box_el)
-      }
-    })
+      this.element.appendChild(video_box_el)
+    }
   }
 }
 
 
-function main() {
+async function main() {
+  let videos = await fetch_json('data/auto/video_info.json')
+  let subtitles = await fetch_json('data/auto/subtitles.json')
   let cur_subs = null
 
   const video_width = 1366
@@ -146,8 +137,9 @@ function main() {
   const title_selector = new TitleSelector(document.getElementById('title_selector'))
   
   video_player.set_size(video_width, video_height)
-  
   sub_panel.set_height(video_height)
+
+  title_selector.update_video_list(videos)
   
   video_player.on_video_update = function() {
     if(cur_subs == null) {
@@ -170,17 +162,15 @@ function main() {
     video_player.play()
   }
 
-  title_selector.on_video_click = (title, video_name) => {
-    video_player.set_video(title, video_name)
+  title_selector.on_video_click = (video_id) => {
+    cur_subs = subtitles.filter((sub) => (sub.video_id == video_id))
+    const video = videos.find((video) => video.video_id == video_id)
+
+    video_player.set_video(video.video_url)
     video_player.play()
 
-    fetch_subs_for_video(title, video_name).then((subs) => {
-      cur_subs = subs
-      sub_panel.set_subs(subs)
-    })
+    sub_panel.update_subtitles(cur_subs)
   }
-
-  title_selector.request_title_list_update()
 }
 
 window.onload = main
