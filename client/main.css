@@ -11,6 +11,19 @@ body {
 #sub_panel {
     background-color: #222327;
     flex-grow: 10;
+}
+
+#sub_search {
+    width: 97%;
+    background-color: #ffffff40;
+    border: 0px;
+    margin: 0px;
+    font-size: large;
+    padding: 5px;
+    color: #fff;
+}
+
+#sub_list {
     overflow: scroll;
 }
 

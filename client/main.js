@@ -16,13 +16,11 @@ class SubPanel {
   }
 
   update_subtitles(subs) {
-    console.log('update subs', subs)
     if (subs == null) {
       subs = []
     }
     
-    const sub_panel_el = document.getElementById('sub_panel')
-    sub_panel_el.innerHTML = ""
+    this.element.innerHTML = ""
     
     for(let sub_idx = 0; sub_idx < subs.length; sub_idx++) {
       const sub_box_el = document.createElement('div')
@@ -41,11 +39,12 @@ class SubPanel {
 
       sub_box_el.appendChild(sub_button_el)
       sub_box_el.appendChild(sub_text_el)
-      sub_panel_el.appendChild(sub_box_el)
+      this.element.appendChild(sub_box_el)
     }
   }
   
   set_cur_sub_idx(sub_idx) {
+    console.log('set current sub', sub_idx)
     const sub_boxes = this.element.querySelectorAll('.sub_box')
     for(var i = 0; i < sub_boxes.length; i++) { 
       sub_boxes[i].className = `sub_box ${ i == sub_idx ? 'sub_box_selected': ''}`
@@ -63,7 +62,8 @@ class VideoPlayer {
   constructor(video_element) {
     this.element = video_element
     this.on_video_update = () => {}
-    this.element.ontimeupdate = () => { this.on_video_update()}
+    this.element.ontimeupdate = () => { this.on_video_update() }
+    this.cur_video = ''
   }
 
   get time_ms() {
@@ -75,6 +75,10 @@ class VideoPlayer {
   }
 
   set_video(video_url) {
+    if(this.cur_video == video_url) {
+      return
+    }
+    this.cur_video = video_url
     const video_source_el = this.element.querySelector('#video_source')
     video_source_el.src = video_url
     video_source_el.type = 'video/mp4'
@@ -127,17 +131,20 @@ class TitleSelector {
 async function main() {
   let videos = await fetch_json('data/auto/video_info.json')
   let subtitles = await fetch_json('data/auto/subtitles.json')
+
   let cur_subs = null
+  let cur_video = null
 
   const video_width = 1366
   const video_height = 768
 
-  const sub_panel = new SubPanel(document.getElementById('sub_panel'))
+  const sub_panel = new SubPanel(document.getElementById('sub_list'))
   const video_player = new VideoPlayer(document.getElementById('video'))
   const title_selector = new TitleSelector(document.getElementById('title_selector'))
+  const sub_search = document.getElementById('sub_search')
   
   video_player.set_size(video_width, video_height)
-  sub_panel.set_height(video_height)
+  sub_panel.set_height(video_height - sub_search.getBoundingClientRect().height)
 
   title_selector.update_video_list(videos)
   
@@ -148,7 +155,7 @@ async function main() {
     const cur_time = video_player.time_ms
 
     for(var i = 0; i < cur_subs.length; i++) {
-      if(cur_subs[i].start < cur_time && cur_subs[i].end > cur_time) {
+      if(cur_subs[i].video_id == cur_video.video_id && cur_subs[i].start < cur_time && cur_subs[i].end > cur_time) {
         sub_panel.set_cur_sub_idx(i)
       }
     }
@@ -158,16 +165,31 @@ async function main() {
     if(cur_subs == null) {
       return
     }
+    cur_video = videos.find((vid) => vid.video_id == cur_subs[sub_idx].video_id)
+
+    video_player.set_video(cur_video.video_url)
     video_player.time_ms = cur_subs[sub_idx].start
     video_player.play()
   }
 
   title_selector.on_video_click = (video_id) => {
     cur_subs = subtitles.filter((sub) => (sub.video_id == video_id))
-    const video = videos.find((video) => video.video_id == video_id)
+    cur_video = videos.find((video) => video.video_id == video_id)
 
-    video_player.set_video(video.video_url)
+    video_player.set_video(cur_video.video_url)
     video_player.play()
+
+    sub_panel.update_subtitles(cur_subs)
+    console.log(cur_subs)
+  }
+
+  sub_search.oninput = (event) => {
+    const query = event.target.value
+    if (query == '') {
+      cur_subs = subtitles.filter((sub) => (sub.video_id == cur_video.video_id))
+    } else {
+      cur_subs = subtitles.filter((sub) => (sub.text.includes(query)))
+    }
 
     sub_panel.update_subtitles(cur_subs)
   }
