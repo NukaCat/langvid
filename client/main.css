@@ -33,10 +33,12 @@ body {
     border: 1px solid rgba(255, 255, 255, .125);
     padding: 5px;
     background-color: #222327;
+    font-size: medium;
 }
 
 .sub_box_selected {
     background-color: #ffffff30;
+    font-size: x-large
 }
 
 .sub_button {
@@ -49,7 +51,6 @@ body {
 }
 
 .sub_text {
-    font-size: larger;
     font-family: 'Source Han Sans';
     margin-left: 10px;
 }
