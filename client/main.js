@@ -33,9 +33,15 @@ class SubPanel {
       }
       sub_button_el.className = 'sub_button'
 
+      let sub_text = subs[sub_idx].text
+      for(let kanji of subs[sub_idx].kanjis) {
+        let url = encodeURI(`http://wanikani.com/kanji/${kanji}`)
+        sub_text = sub_text.replaceAll(kanji, `<a href="${url}" class="kanji" target="_blank">${kanji}</a>`)
+      }
+
       const sub_text_el = document.createElement('div')
       sub_text_el.className = 'sub_text'
-      sub_text_el.innerText = subs[sub_idx].text
+      sub_text_el.innerHTML = sub_text
 
       sub_box_el.appendChild(sub_button_el)
       sub_box_el.appendChild(sub_text_el)
@@ -131,6 +137,24 @@ class TitleSelector {
 async function main() {
   let videos = await fetch_json('data/auto/video_info.json')
   let subtitles = await fetch_json('data/auto/subtitles.json')
+  let wanikani = await fetch_json('data/auto/wanikani.json')
+  
+  let kanji_list = []
+  for(let item of wanikani){
+    if(item.object == 'kanji') {
+      kanji_list.push(item.data.characters)
+    }
+  }
+  
+  for(let sub of subtitles) {
+    let sub_kanjis = []
+    for(let kanji of kanji_list) {
+      if(sub.text.includes(kanji)) {
+        sub_kanjis.push(kanji)
+      }
+    }
+    sub['kanjis'] = sub_kanjis
+  }
 
   let cur_subs = null
   let cur_video = null

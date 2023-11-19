@@ -27,6 +27,10 @@ body {
     overflow: scroll;
 }
 
+.kanji {
+    color: lightcoral
+}
+
 .sub_box {
     display: flex;
     align-items: center;
