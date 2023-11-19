@@ -1,10 +1,9 @@
-from dataclasses import dataclass
-from flask import Flask, send_from_directory, send_file
+from flask import Flask, send_from_directory
 import pysrt
 import json
 import os
-import sys
 import ffmpeg
+import urllib3
 
 DATA_PATH = ''
 DATA_AUTO_PATH = ''
@@ -100,13 +99,53 @@ def root():
     return send_from_directory('client', 'index.html')
 
 
+def generate_wanikani_json(path, token, level):
+    headers = {
+        "Wanikani-Revision": "20170710",
+        "Authorization": "Bearer " + token,
+    }
+
+    http = urllib3.PoolManager()
+    levels_str = ",".join([str(num) for num in range(1, level + 1)])
+    url = f"https://api.wanikani.com/v2/subjects/?levels={levels_str}"
+    data = []
+    while url:
+        resp = http.request("GET", url, headers=headers)
+        resp_json = json.loads(resp.data)
+        data.extend(resp_json['data'])
+        url = resp_json.get('next_url')
+    
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+
 if __name__ == '__main__':
-    if len(sys.argv) != 3 or sys.argv[1] != '--data':
-        print('expected --data argument')
+    params_path = 'server_params.json'
+    if not os.path.isfile(params_path):
+        print(f"can't find {params_path}")
         exit(-1)
-    DATA_PATH = sys.argv[2]
+
+    with open(params_path) as f:
+        params = json.load(f)
+        
+    if 'data_dir' not in params or params['data_dir'] == '':
+        print(f'data dir not specified')
+        exit(-1)
+    
+    DATA_PATH = params['data_dir']
     DATA_AUTO_PATH = os.path.join(DATA_PATH, 'auto')
     os.makedirs(DATA_AUTO_PATH, exist_ok=True)
+    
+    wanikani_file_path = os.path.join(DATA_AUTO_PATH, 'wanikani.json')
+    if 'wanikani' in params and not os.path.exists(wanikani_file_path):
+        if 'token' not in params['wanikani']:
+            print('wanikani token is not specified in params')
+            exit(-1)
+        if 'level' not in params['wanikani']:
+            print('wanikani level is not specified in params')
+            exit(-1)
+            
+        generate_wanikani_json(wanikani_file_path, params['wanikani']['token'], int(params['wanikani']['level']))
     
     video_list = collect_videos()
     generate_thumbnails(video_list)

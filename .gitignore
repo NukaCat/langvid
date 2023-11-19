@@ -1,3 +1,4 @@
 *.bat
 todo.txt
 .vscode
+server_params.json
